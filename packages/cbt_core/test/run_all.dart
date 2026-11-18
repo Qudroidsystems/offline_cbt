@@ -20,6 +20,17 @@ void check(bool ok, String what) {
   }
 }
 
+/// Waits until [cond] is true (polling), up to [max]. Network timings differ per OS:
+/// e.g. on Windows a connection to a stopped server takes ~2 s to fail, on Linux it is instant.
+Future<bool> waitFor(bool Function() cond, {Duration max = const Duration(seconds: 15)}) async {
+  final sw = Stopwatch()..start();
+  while (sw.elapsed < max) {
+    if (cond()) return true;
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+  return cond();
+}
+
 Future<void> expectError(FutureOr<void> Function() f, String code, String what) async {
   try {
     await f();
@@ -207,15 +218,13 @@ Future<void> httpTests() async {
   final start = await client.start(10);
   final session = ExamSession(cdb: clientDb, client: client, startData: start);
   session.setAnswer(101, 'Abuja');
-  await Future.delayed(const Duration(milliseconds: 1200));
-  check(session.saveState == SaveState.saved, 'answer saved to server');
+  check(await waitFor(() => session.saveState == SaveState.saved), 'answer saved to server');
   check(serverDb.db.select("SELECT answer FROM answers WHERE question_id = 101").first['answer'] == 'Abuja', 'server has answer');
 
   // Wi-Fi drops: server unreachable
   await server.stop();
   session.setAnswer(102, 'False');
-  await Future.delayed(const Duration(milliseconds: 1500));
-  check(session.saveState == SaveState.offline, 'goes offline, keeps working');
+  check(await waitFor(() => session.saveState == SaveState.offline), 'goes offline, keeps working');
   check(clientDb.db.select('SELECT dirty FROM client_answers WHERE question_id = 102').first['dirty'] == 1, 'answer kept on student computer');
 
   // Student computer crashes & app restarts: a new session rebuilds unsent answers from SQLite.
@@ -226,8 +235,8 @@ Future<void> httpTests() async {
   final resumed = await client.start(10);
   final session2 = ExamSession(cdb: clientDb, client: client, startData: resumed);
   check(session2.answers[102] == 'False' && session2.answers[101] == 'Abuja', 'answers restored after restart');
-  await Future.delayed(const Duration(milliseconds: 800));
-  check(serverDb.db.select("SELECT answer FROM answers WHERE question_id = 102").firstOrNull?['answer'] == 'False', 'unsent answer delivered when server is back');
+  check(await waitFor(() => serverDb.db.select("SELECT answer FROM answers WHERE question_id = 102").firstOrNull?['answer'] == 'False'),
+      'unsent answer delivered when server is back');
 
   session2.setAnswer(103, 'photosynthesis');
   final ok = await session2.submit();
@@ -245,8 +254,7 @@ Future<void> httpTests() async {
   check(!ok3 && s3.submittedLocally && !s3.submitted, 'submit while offline is kept');
   server = LocalServer(svc, serverName: 'ICT Lab', schoolName: 'CSS Kabba');
   await server.start(port: port, address: InternetAddress.loopbackIPv4);
-  await Future.delayed(const Duration(seconds: 6));
-  check(s3.submitted, 'pending submit completes when server is back');
+  check(await waitFor(() => s3.submitted, max: const Duration(seconds: 25)), 'pending submit completes when server is back');
   check(serverDb.db.select("SELECT status FROM attempts WHERE user_id = 503").first['status'] == 'submitted', 'server recorded it');
   s3.dispose();
 
@@ -393,16 +401,14 @@ Future<void> pauseTests() async {
   await client.login('CSS/003', 'ZZ4422');
   final session = ExamSession(cdb: CbtDb.memory(), client: client, startData: await client.start(10));
   svc2.pauseExam(10);
-  await Future.delayed(const Duration(seconds: 7));
-  check(session.paused, 'student computer sees the pause');
+  check(await waitFor(() => session.paused), 'student computer sees the pause');
   final frozen = session.remaining;
   session.setAnswer(101, 'Abuja');
   check(session.answers[101] == null, 'answers locked while paused');
   await Future.delayed(const Duration(seconds: 2));
   check(session.remaining == frozen, 'student timer frozen');
   svc2.resumeExam(10);
-  await Future.delayed(const Duration(seconds: 7));
-  check(!session.paused, 'student computer sees the resume');
+  check(await waitFor(() => !session.paused), 'student computer sees the resume');
   session.dispose();
   await server.stop();
 }
