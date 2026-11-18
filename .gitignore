@@ -1,0 +1,10 @@
+.dart_tool/
+build/
+dist/
+.packages
+pubspec.lock
+packages/cbt_core/.dart_tool/
+packages/cbt_core/pubspec.lock
+*.iml
+.idea/
+windows/flutter/ephemeral/
