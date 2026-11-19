@@ -9,6 +9,7 @@ import 'app/services.dart';
 import 'ui/common/theme.dart';
 import 'ui/mode_select_page.dart';
 import 'ui/server/server_home.dart';
+import 'ui/splash_page.dart';
 import 'ui/student/connect_page.dart';
 
 Future<void> main() async {
@@ -44,7 +45,7 @@ class OfflineCbtApp extends StatelessWidget {
       title: 'Offline CBT',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
-      home: const RootPage(),
+      home: const SplashPage(),
     );
   }
 }
