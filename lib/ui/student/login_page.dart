@@ -2,6 +2,7 @@ import 'package:cbt_core/cbt_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/services.dart';
+import '../../app/sounds.dart';
 import '../common/theme.dart';
 import '../common/widgets.dart';
 import 'exam_list_page.dart';
@@ -32,6 +33,8 @@ class _LoginPageState extends State<LoginPage> {
       // cached so the logo shows instantly next time
       Services.I.db.setSetting('school_name_cache', '${h['name']}');
       Services.I.db.setSetting('school_logo_cache', h['logo'] as String?);
+      Services.I.db.setSetting('sounds_cache', h['sounds'] == false ? '0' : '1');
+      Sounds.enabled = h['sounds'] != false;
       if (mounted) setState(() {
         _school = '${h['name']}';
         _logo = h['logo'] as String?;
@@ -48,11 +51,13 @@ class _LoginPageState extends State<LoginPage> {
     final client = ServerClient(widget.serverUrl, workstation: Services.I.workstation, appVersion: appVersion);
     try {
       final r = await client.login(_adm.text.trim(), _secret.text);
+      Sounds.play(Sfx.login);
       if (!mounted) return;
       _secret.clear();
       await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ExamListPage(client: client, login: r)));
       _adm.clear();
     } on ServerError catch (e) {
+      Sounds.play(Sfx.error);
       _err = e.message;
     }
     if (mounted) setState(() => _busy = false);
@@ -61,22 +66,21 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: widget.allowBack, title: Text(_school.isEmpty ? 'Student login' : _school)),
+      appBar: AppBar(automaticallyImplyLeading: widget.allowBack, title: const Text('Student login')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
+            constraints: const BoxConstraints(maxWidth: 460),
             child: Card(
               child: Padding(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(36),
                 child: AutofillGroup(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    if (_logo != null) Center(child: DataImage(_logo, maxHeight: 96)) else const Icon(Icons.school_rounded, size: 48, color: teal),
-                    const SizedBox(height: 8),
-                    if (_school.isNotEmpty)
-                      Text(_school, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black54)),
-                    const Text('CBT Login', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: navy)),
+                    SchoolBrand(name: _school.isEmpty ? null : _school, logo: _logo, size: 88, center: true,
+                        nameStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: label, height: 1.2)),
+                    const SizedBox(height: 6),
+                    const Text('Computer-Based Test', textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: label2)),
                     const SizedBox(height: 24),
                     TextField(
                       controller: _adm,

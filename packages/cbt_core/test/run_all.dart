@@ -54,6 +54,8 @@ Future<void> main() async {
   await group('pause / resume', pauseTests);
   await group('practice test, PIN-only, photos, computers, focus, report', extrasTests);
   await group('upgrade an old database', migrationTests);
+  await group('calculator', calcTests);
+  await group('calculator & sound settings reach student computers', settingsTests);
   stdout.writeln('\n$_pass passed, $_fail failed');
   exit(_fail == 0 ? 0 : 1);
 }
@@ -475,10 +477,57 @@ Future<void> migrationTests() async {
   old.db.execute('DROP TABLE workstations');
   old.close();
   final up = CbtDb.open(path);
-  check(up.db.select('PRAGMA user_version').first.values.first == 2, 'upgraded to v2');
+  check(up.db.select('PRAGMA user_version').first.values.first == 3, 'upgraded to the latest schema');
   ExamStore(up).importPackage(samplePackage());
   final svc = ExamService(up)..setExamOpen(10, true)..pauseExam(10);
   check(svc.anyPaused, 'new columns usable after upgrade');
   up.close();
   File(path).deleteSync();
+}
+
+// ── calculator ───────────────────────────────────────────────────────────
+void calcTests() {
+  final c = Calculator();
+  final cases = {
+    '2+3×4': '14', '(2+3)×4': '20', '2^3^2': '512', '-2^2': '-4', '10÷4': '2.5', '0.1+0.2': '0.3',
+    'sin30': '0.5', 'sin(30)': '0.5', 'cos60': '0.5', 'sin180': '0', 'tan45': '1', 'asin(0.5)': '30',
+    'log100': '2', 'log(1000)': '3', 'ln(e)': '1', '√16': '4', '√(9)+1': '4', '∛27': '3', '∛(-8)': '-2',
+    '5!': '120', '50%': '0.5', '2π': '6.28318530718', '3(4+1)': '15', '2sin30': '1', 'e^2': '7.38905609893',
+    '1.5E3': '1500', '2×(3+4': '14', 'abs(-7)': '7', '10^-2': '0.01', 'log(2)': '0.301029995664',
+  };
+  cases.forEach((expr, want) {
+    final got = Calculator.format(c.evaluate(expr));
+    check(got == want, '$expr = $want (got $got)');
+  });
+  for (final bad in ['1/0', 'log(-1)', '√(-4)', '(-3)!', '2++', 'sin', 'foo(2)', 'tan90']) {
+    try {
+      c.evaluate(bad);
+      check(false, 'error expected for $bad');
+    } on CalcError {
+      check(true, '');
+    }
+  }
+  c.evaluate('6×7');
+  check(Calculator.format(c.evaluate('ans+1')) == '43', 'Ans');
+  c.radians = true;
+  check(Calculator.format(c.evaluate('sin(π/2)')) == '1', 'radians');
+  check(Calculator.format(123456789012345678.0) == '1.23456789×10^17', 'big numbers in standard form');
+}
+
+Future<void> settingsTests() async {
+  final db = CbtDb.memory();
+  ExamStore(db).importPackage(samplePackage());
+  final svc = ExamService(db)..setExamOpen(10, true);
+  check((svc.start(501, 10, 'PC')['exam'] as Map)['calculator'] == 'basic', 'basic calculator by default');
+  svc.setCalculator(10, 'scientific');
+  svc.studentSounds = false;
+  final s = svc.start(501, 10, 'PC')['exam'] as Map;
+  check(s['calculator'] == 'scientific' && s['sounds'] == false, 'admin choices sent with the exam');
+  svc.setCalculator(10, 'off');
+  check((svc.start(501, 10, 'PC')['exam'] as Map)['calculator'] == 'off', 'calculator can be switched off');
+  final server = LocalServer(svc, serverName: 'S', schoolName: 'CSS Kabba');
+  await server.start(port: 0, address: InternetAddress.loopbackIPv4);
+  final sch = await ServerClient('http://127.0.0.1:${server.port}', workstation: 'PC').school();
+  check(sch['sounds'] == false, 'sound setting available at login');
+  await server.stop();
 }

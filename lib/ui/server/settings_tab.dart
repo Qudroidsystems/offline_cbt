@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
 import '../../app/services.dart';
+import '../../app/sounds.dart';
 import '../../main.dart';
 import '../common/theme.dart';
 import '../common/widgets.dart';
@@ -119,6 +120,25 @@ class _SettingsTabState extends State<SettingsTab> {
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const Text('Sounds', style: TextStyle(fontWeight: FontWeight.w600)),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: s.exams.studentSounds,
+                  onChanged: (v) => setState(() => s.exams.studentSounds = v),
+                  title: const Text('Sounds on student computers'),
+                  subtitle: const Text('Login, exam start, 5-minute and 1-minute warnings, last-10-seconds countdown, time up, submitted, pause/resume, Wi-Fi lost/back.'),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: s.adminSounds,
+                  onChanged: (v) => setState(() {
+                    s.adminSounds = v;
+                    Sounds.enabled = v;
+                  }),
+                  title: const Text('Alert sounds on this computer'),
+                  subtitle: const Text('When a student submits, or leaves the exam window.'),
+                ),
+                const Divider(height: 28),
                 const Text('How students log in', style: TextStyle(fontWeight: FontWeight.w600)),
                 RadioListTile<String>(
                   value: 'both',

@@ -70,6 +70,10 @@ class Services {
   String get schoolName => (store.school()?['name'] as String?) ?? 'School';
   String? get schoolLogo => store.school()?['logo'] as String?;
 
+  /// Alert sounds on the admin computer (submissions, students leaving the exam window).
+  bool get adminSounds => db.setting('admin_sounds') != '0';
+  set adminSounds(bool v) => db.setSetting('admin_sounds', v ? '1' : '0');
+
   // ── login mode & passwords ─────────────────────────────────────────
   /// 'both' = portal password or PIN, 'pin' = PIN only (no passwords downloaded).
   String get loginMode => exams.loginMode;

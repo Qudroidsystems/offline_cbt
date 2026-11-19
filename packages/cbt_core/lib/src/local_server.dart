@@ -72,7 +72,7 @@ class LocalServer {
         }));
 
     // School name + logo for the student login screens (logo sent once, not with every hello).
-    r.get('/api/school', (Request req) => _json({'name': schoolName, 'logo': schoolLogo?.call()}));
+    r.get('/api/school', (Request req) => _json({'name': schoolName, 'logo': schoolLogo?.call(), 'sounds': exams.studentSounds}));
 
     r.post('/api/login', (Request req) async {
       final b = await _body(req);

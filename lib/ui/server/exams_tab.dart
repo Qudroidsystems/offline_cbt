@@ -195,6 +195,24 @@ class _ExamsTabState extends State<ExamsTab> {
           '${open ? 'OPEN — students can start' : 'Closed — students cannot start yet'}'),
       isThreeLine: true,
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        Tooltip(
+          message: 'Calculator on the student\'s exam screen',
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: DropdownButton<String>(
+              value: '${e['calculator'] ?? 'basic'}',
+              underline: const SizedBox.shrink(),
+              borderRadius: BorderRadius.circular(12),
+              style: const TextStyle(fontSize: 13, color: label),
+              items: const [
+                DropdownMenuItem(value: 'off', child: Text('Calculator: Off')),
+                DropdownMenuItem(value: 'basic', child: Text('Calculator: Basic')),
+                DropdownMenuItem(value: 'scientific', child: Text('Calculator: Scientific')),
+              ],
+              onChanged: (v) => setState(() => Services.I.exams.setCalculator(e['id'] as int, v ?? 'basic')),
+            ),
+          ),
+        ),
         if ((e['id'] as int) > 0)
           Tooltip(
             message: 'Each student gets the questions and options in a different order',

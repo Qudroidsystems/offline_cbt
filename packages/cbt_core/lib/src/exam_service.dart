@@ -35,6 +35,10 @@ class ExamService {
   int get _nowMs => _now().millisecondsSinceEpoch;
   String get _nowIso => _now().toIso8601String();
 
+  /// Sounds on student computers (login, warnings, time up…). Default on.
+  bool get studentSounds => cdb.setting('student_sounds') != '0';
+  set studentSounds(bool v) => cdb.setSetting('student_sounds', v ? '1' : '0');
+
   /// 'both' (portal password or PIN) or 'pin' (PIN only).
   String get loginMode => cdb.setting('login_mode') ?? 'both';
   set loginMode(String v) => cdb.setSetting('login_mode', v == 'pin' ? 'pin' : 'both');
@@ -163,6 +167,8 @@ class ExamService {
         'id': e['id'], 'title': e['title'], 'subject': e['subject'], 'class_name': e['class_name'],
         'duration': e['duration'], 'total_marks': e['total_marks'], 'description': e['description'],
         'practice': examId < 0,
+        'calculator': e['calculator'] ?? 'basic',   // off | basic | scientific
+        'sounds': studentSounds,
       },
       'questions': _questionsForStudent(examId, at['uuid'] as String, shuffle: e['shuffle'] == 1),
       'answers': saved,
@@ -360,6 +366,8 @@ class ExamService {
   }
 
   void setShowScore(int examId, bool show) => cdb.db.execute('UPDATE exams SET show_score = ? WHERE id = ?', [show ? 1 : 0, examId]);
+  void setCalculator(int examId, String mode) => cdb.db.execute('UPDATE exams SET calculator = ? WHERE id = ?',
+      [const {'off', 'basic', 'scientific'}.contains(mode) ? mode : 'basic', examId]);
   void setShuffle(int examId, bool on) => cdb.db.execute('UPDATE exams SET shuffle = ? WHERE id = ?', [on ? 1 : 0, examId]);
 
   /// Stop the clock for everyone writing this exam (power cut, fire drill…).

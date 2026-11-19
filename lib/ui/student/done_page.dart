@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cbt_core/cbt_core.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/sounds.dart';
 import '../common/theme.dart';
 import '../common/widgets.dart';
 
@@ -16,11 +17,20 @@ class DonePage extends StatefulWidget {
 
 class _DonePageState extends State<DonePage> {
   StreamSubscription<void>? _sub;
+  bool _chimed = false;
+
+  void _chime() {
+    if (_chimed || !widget.session.submitted) return;
+    _chimed = true;
+    Sounds.play(Sfx.submitted);
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _chime());
     _sub = widget.session.changes.listen((_) {
+      _chime();
       if (mounted) setState(() {});
     });
   }
@@ -48,6 +58,8 @@ class _DonePageState extends State<DonePage> {
               child: Padding(
                 padding: const EdgeInsets.all(36),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  SchoolBrand.cached(size: 52, center: true),
+                  const SizedBox(height: 22),
                   Icon(confirmed ? Icons.check_circle_rounded : Icons.cloud_sync_rounded, size: 72, color: confirmed ? okGreen : warnAmber),
                   const SizedBox(height: 16),
                   Text(confirmed ? 'Exam submitted' : 'Submitting…',

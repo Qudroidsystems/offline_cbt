@@ -91,8 +91,8 @@ class ExamStore {
     final db = cdb.db;
     cdb.transaction(() {
       if (db.select('SELECT 1 FROM exams WHERE id = -1').isEmpty) {
-        db.execute('''INSERT INTO exams(id, package_uuid, title, description, duration, subject, class_name, total_marks, question_count, is_open, show_score, shuffle)
-                      VALUES (-1, NULL, 'Practice test (not recorded)', 'Try the exam screen before the real exam.', 10, 'Practice', 'All classes', 3, 3, 0, 1, 0)''');
+        db.execute('''INSERT INTO exams(id, package_uuid, title, description, duration, subject, class_name, total_marks, question_count, is_open, show_score, shuffle, calculator)
+                      VALUES (-1, NULL, 'Practice test (not recorded)', 'Try the exam screen before the real exam.', 10, 'Practice', 'All classes', 3, 3, 0, 1, 0, 'scientific')''');
         const qs = [
           [-101, 'mcq', 'Which of these is a <b>fruit</b>?', [['Mango', 1], ['Chair', 0], ['Pencil', 0], ['Shoe', 0]]],
           [-102, 'true_false', 'You can change an answer until you press <b>Submit</b>.', [['True', 1], ['False', 0]]],

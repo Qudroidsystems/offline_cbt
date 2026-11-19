@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
 import 'app/services.dart';
+import 'app/sounds.dart';
 import 'ui/common/theme.dart';
 import 'ui/mode_select_page.dart';
 import 'ui/server/server_home.dart';
@@ -27,6 +28,7 @@ Future<void> main() async {
   Directory(dir).createSync(recursive: true);
   final db = CbtDb.open(p.join(dir, 'offline_cbt.db'));
   Services.I = Services(db, dir);
+  Sounds.enabled = Services.I.mode == 'server' ? Services.I.adminSounds : Services.I.db.setting('sounds_cache') != '0';
   if (Services.I.mode == 'server') {
     Services.I.store.ensurePracticeExam();
     await Services.I.startServer();

@@ -122,7 +122,12 @@ class _ConnectPageState extends State<ConnectPage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const Icon(Icons.wifi_find_rounded, size: 52, color: teal),
+              if (Services.I.db.setting('school_name_cache') != null) ...[
+                Center(child: SchoolBrand.cached(size: 72, center: true,
+                    nameStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: label))),
+                const SizedBox(height: 24),
+              ] else
+                const Icon(Icons.wifi_find_rounded, size: 52, color: teal),
               const SizedBox(height: 8),
               const Text('Connect to the exam server', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: navy)),
               const Text('Make sure this computer is on the same Wi-Fi as the invigilator\'s computer.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),

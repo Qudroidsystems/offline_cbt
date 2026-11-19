@@ -178,3 +178,159 @@ class Avatar extends StatelessWidget {
 
   Widget _blank() => CircleAvatar(radius: size / 2, backgroundColor: const Color(0xFFE2E8F0), child: Icon(Icons.person, size: size * 0.6, color: Colors.white));
 }
+
+/// School logo + name (from the exam server's package).
+class SchoolBrand extends StatelessWidget {
+  const SchoolBrand({super.key, this.name, this.logo, this.subtitle, this.size = 40, this.center = false, this.nameStyle});
+  final String? name;
+  final String? logo;
+  final String? subtitle;
+  final double size;
+  final bool center;
+  final TextStyle? nameStyle;
+
+  /// What a student computer last received from its exam server.
+  factory SchoolBrand.cached({String? subtitle, double size = 40, bool center = false, TextStyle? nameStyle}) => SchoolBrand(
+        name: Services.I.db.setting('school_name_cache'),
+        logo: Services.I.db.setting('school_logo_cache'),
+        subtitle: subtitle,
+        size: size,
+        center: center,
+        nameStyle: nameStyle,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = logo != null && logo!.contains(',');
+    final text = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        if (name != null && name!.isNotEmpty)
+          Text(name!, textAlign: center ? TextAlign.center : TextAlign.start, overflow: TextOverflow.ellipsis, maxLines: 2,
+              style: nameStyle ?? TextStyle(fontSize: size * 0.4, fontWeight: FontWeight.w700, color: label, height: 1.15)),
+        if (subtitle != null) Text(subtitle!, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: size * 0.3, color: label2)),
+      ],
+    );
+    final img = hasLogo
+        ? ClipRRect(borderRadius: BorderRadius.circular(size * 0.22), child: DataImage(logo, maxHeight: size))
+        : Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(color: const Color(0x1A007AFF), borderRadius: BorderRadius.circular(size * 0.22)),
+            child: Icon(Icons.school_rounded, color: appleBlue, size: size * 0.6),
+          );
+    if (center) return Column(mainAxisSize: MainAxisSize.min, children: [img, SizedBox(height: size * 0.25), text]);
+    return Row(mainAxisSize: MainAxisSize.min, children: [img, SizedBox(width: size * 0.3), Flexible(child: text)]);
+  }
+}
+
+/// Colour for the time left: green, then orange under 25 %, red under 10 % or the last 2 minutes.
+Color timeColor(Duration remaining, Duration total) {
+  final frac = total.inSeconds <= 0 ? 0.0 : remaining.inSeconds / total.inSeconds;
+  if (remaining.inSeconds <= 120 || frac <= 0.10) return badRed;
+  if (frac <= 0.25) return warnAmber;
+  return okGreen;
+}
+
+/// Countdown ring: empties as time passes, changes colour, pulses in the last minute.
+class TimerRing extends StatefulWidget {
+  const TimerRing({super.key, required this.remaining, required this.total, this.paused = false, this.size = 150});
+  final Duration remaining;
+  final Duration total;
+  final bool paused;
+  final double size;
+  @override
+  State<TimerRing> createState() => _TimerRingState();
+}
+
+class _TimerRingState extends State<TimerRing> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = widget;
+    final frac = w.total.inSeconds <= 0 ? 0.0 : (w.remaining.inSeconds / w.total.inSeconds).clamp(0.0, 1.0);
+    final color = w.paused ? label2 : timeColor(w.remaining, w.total);
+    final lastMinute = !w.paused && w.remaining.inSeconds <= 60;
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) {
+        final glow = lastMinute ? 0.25 + 0.35 * _pulse.value : 0.0;
+        return Container(
+          width: w.size,
+          height: w.size,
+          decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
+            if (glow > 0) BoxShadow(color: badRed.withAlpha((glow * 255).round()), blurRadius: 24, spreadRadius: 2),
+          ]),
+          child: CustomPaint(
+            painter: _RingPainter(frac, color),
+            child: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                if (w.paused) Icon(Icons.pause_rounded, color: label2, size: w.size * 0.16),
+                Text(fmtDuration(w.remaining),
+                    style: TextStyle(
+                        fontSize: w.size * (w.remaining.inHours > 0 ? 0.17 : 0.21),
+                        fontWeight: FontWeight.w700,
+                        color: w.paused ? label2 : (color == okGreen ? label : color),
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        letterSpacing: -0.5)),
+                Text(w.paused ? 'PAUSED' : 'TIME LEFT',
+                    style: TextStyle(fontSize: w.size * 0.075, color: label2, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+              ]),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter(this.frac, this.color);
+  final double frac;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.width * 0.075;
+    final rect = Offset(stroke / 2, stroke / 2) & Size(size.width - stroke, size.height - stroke);
+    canvas.drawArc(rect, 0, 6.2832, false, Paint()
+      ..color = const Color(0xFFE5E5EA)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke);
+    if (frac > 0) {
+      canvas.drawArc(rect, -1.5708, 6.2832 * frac, false, Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.frac != frac || old.color != color;
+}
+
+/// Small rounded label (Apple-style "pill").
+class Pill extends StatelessWidget {
+  const Pill(this.text, {super.key, this.color = appleBlue, this.icon});
+  final String text;
+  final Color color;
+  final IconData? icon;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(color: color.withAlpha(28), borderRadius: BorderRadius.circular(20)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[Icon(icon, size: 14, color: color), const SizedBox(width: 5)],
+          Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+        ]),
+      );
+}

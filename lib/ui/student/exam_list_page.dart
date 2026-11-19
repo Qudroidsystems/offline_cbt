@@ -79,14 +79,17 @@ class _ExamListPageState extends State<ExamListPage> {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: Text('${_student['name']}  •  ${_student['admission_no']}  •  ${_student['class_name'] ?? ''}'),
+          title: const Text('Your exams'),
           actions: [
             IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh), tooltip: 'Refresh'),
-            TextButton.icon(onPressed: _logout, icon: const Icon(Icons.logout, color: Colors.white), label: const Text('Log out', style: TextStyle(color: Colors.white))),
+            TextButton.icon(onPressed: _logout, icon: const Icon(Icons.logout), label: const Text('Log out')),
             const SizedBox(width: 8),
           ],
         ),
         body: ListView(padding: const EdgeInsets.all(28), children: [
+          Center(child: SchoolBrand.cached(size: 64, center: true,
+              nameStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: label))),
+          const SizedBox(height: 22),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),

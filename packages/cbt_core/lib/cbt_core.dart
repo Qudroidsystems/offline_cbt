@@ -2,6 +2,7 @@
 library;
 
 export 'src/bcrypt.dart' show bcryptVerify;
+export 'src/calc.dart';
 export 'src/db.dart';
 export 'src/discovery.dart';
 export 'src/exam_service.dart';

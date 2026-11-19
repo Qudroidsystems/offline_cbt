@@ -52,7 +52,11 @@ No PHP, MySQL, Composer or Flutter is installed at the school — the installer 
 - **Login mode** — portal password or PIN, or **PIN only** (no password hashes downloaded); "Remove saved passwords now".
 - **Hotspot help** — use the admin PC's Windows Mobile hotspot when there is no router (≈8 computers).
 - **Update alerts** — set `OFFLINE_CBT_LATEST_VERSION` / `OFFLINE_CBT_DOWNLOAD_URL` in the portal's `.env`.
-- Students: bigger/smaller text and a calculator on the exam screen; keys A–D choose, ← → move.
+- **Calculator per exam** — Off, Basic or Scientific (sin/cos/tan and inverses, log, ln, powers, roots, x!, π, e, Ans, DEG/RAD). Floating and draggable; keyboard input.
+- **Sounds** — login, exam start, 5-minute and 1-minute warnings, last-10-seconds tick, time up, submitted, pause/resume, Wi-Fi lost/back; admin alerts on submissions and students leaving the window. Synthesised in the app; switch off in Settings.
+- **School branding** — the school's name and logo (from the portal) on every student screen.
+- Apple-style design (same colours as the portal's Apple theme); timer ring that changes colour and pulses in the last minute.
+- Students: bigger/smaller text; keys A–D choose, ← → move.
 
 ## What protects the results
 
@@ -113,7 +117,7 @@ packages/cbt_core/        all logic, pure Dart (testable without Flutter)
   marker.dart             same marking rules as the portal
   reports.dart            results report (CSV + printable HTML)
   bcrypt.dart             checks Laravel $2y$ password hashes offline
-  test/run_all.dart       100 checks: cd packages/cbt_core && dart run test/run_all.dart
+  test/run_all.dart       146 checks: cd packages/cbt_core && dart run test/run_all.dart
 installer/                Inno Setup script, build script, icon + wizard images (installer/assets)
 .github/workflows/        GitHub Actions: builds the installer on Windows
 ```

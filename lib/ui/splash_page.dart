@@ -56,7 +56,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
         child: Scaffold(
           body: Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [navy, Color(0xFF134E5E), teal]),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [brandNavy, Color(0xFF134E5E), brandTeal]),
             ),
             child: AnimatedBuilder(
               animation: _c,

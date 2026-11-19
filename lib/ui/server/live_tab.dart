@@ -4,6 +4,7 @@ import 'package:cbt_core/cbt_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/services.dart';
+import '../../app/sounds.dart';
 import '../common/theme.dart';
 import '../common/widgets.dart';
 import '../student/login_page.dart';
@@ -20,6 +21,20 @@ class _LiveTabState extends State<LiveTab> {
   int? _examId;
   String _q = '';
   List<String> _ips = [];
+  int? _lastSubmitted, _lastFocusLost;
+
+  /// Soft alerts for the invigilator: someone submitted / left the exam window.
+  void _alerts(List<Map<String, dynamic>> all) {
+    final sub = all.where((r) => r['status'] == 'submitted').length;
+    final fl = all.fold<int>(0, (n, r) => n + ((r['focus_lost'] as int?) ?? 0));
+    if (_lastFocusLost != null && fl > _lastFocusLost!) {
+      Sounds.play(Sfx.alert);
+    } else if (_lastSubmitted != null && sub > _lastSubmitted!) {
+      Sounds.play(Sfx.submitted);
+    }
+    _lastSubmitted = sub;
+    _lastFocusLost = fl;
+  }
 
   @override
   void initState() {
@@ -91,7 +106,9 @@ class _LiveTabState extends State<LiveTab> {
   Widget build(BuildContext context) {
     final s = Services.I;
     final exams = s.db.db.select('SELECT id, title, class_name, is_open, paused_at FROM exams ORDER BY id < 0, title');
-    var rows = s.exams.liveAttempts(examId: _examId);
+    final all = s.exams.liveAttempts();
+    _alerts(all);
+    var rows = _examId == null ? all : all.where((r) => r['exam_id'] == _examId).toList();
     if (_q.isNotEmpty) {
       final q = _q.toLowerCase();
       rows = rows.where((r) => '${r['lastname']} ${r['firstname']} ${r['admission_no']} ${r['workstation']}'.toLowerCase().contains(q)).toList();

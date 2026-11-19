@@ -9,7 +9,7 @@ class CbtDb {
   CbtDb._(this.db);
   final Database db;
 
-  static const schemaVersion = 2;
+  static const schemaVersion = 3;
 
   factory CbtDb.open(String path) => CbtDb._(sqlite3.open(path))..migrate();
   factory CbtDb.memory() => CbtDb._(sqlite3.openInMemory())..migrate();
@@ -92,6 +92,11 @@ class CbtDb {
           user_id INTEGER, attempt_uuid TEXT);
       ''');
       db.execute('PRAGMA user_version = 2');
+    }
+    if (v < 3) {
+      // v3: per-exam calculator: 'off' | 'basic' | 'scientific'
+      _addColumn('exams', "calculator TEXT NOT NULL DEFAULT 'basic'");
+      db.execute('PRAGMA user_version = 3');
     }
   }
 
